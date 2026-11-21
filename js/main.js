@@ -3,8 +3,8 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { W, M, FY, buildWorld, updateWorld, collide, groundY, zoneOf, indoors, clearLine, setDoor, inCorn, CLEARING } from './world.js';
-import { makePerson, makeGhost, animate, pose, headMaterial } from './people.js';
+import { W, M, FY, buildWorld, updateWorld, updateChunks, collide, groundY, zoneOf, indoors, clearLine, setDoor, inCorn, CLEARING } from './world.js';
+import { makePerson, makeGhost, animate, pose, headMaterial, cullRigs } from './people.js';
 import { createGore } from './gore.js';
 import { createPumpkinMan } from './pumpkin.js';
 import { createStory, DEATHS, NOTES, SOULS } from './story.js';
@@ -32,7 +32,7 @@ const canvas = $('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false });
 renderer.info.autoReset = false; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.shadowMap.autoUpdate = false;
 const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x0a0b13, 0.042);
-const camera = new THREE.PerspectiveCamera(settings.fov, innerWidth / innerHeight, 0.05, 220); camera.rotation.order = 'YXZ'; scene.add(camera);
+const camera = new THREE.PerspectiveCamera(settings.fov, innerWidth / innerHeight, 0.05, 80); // the fog hides everything past ~60 m camera.rotation.order = 'YXZ'; scene.add(camera);
 const FX = {
   uniforms: { tDiffuse: { value: null }, time: { value: 0 }, fear: { value: 0 }, bright: { value: 1 }, flash: { value: 0 }, red: { value: 0 }, black: { value: 0 }, him: { value: 0 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
@@ -95,7 +95,7 @@ function applyQuality() {
   pool.forEach((l, i) => { const on = i < (q === 'low' ? 2 : q === 'high' ? 4 : 3); if (!on) l.intensity = 0; l.userData.off = !on; });
   renderer.setPixelRatio(basePR * gov.scale); composer.setPixelRatio(basePR * gov.scale);
   moon.castShadow = q !== 'low'; flash.castShadow = q === 'high';
-  if (W.meshes.corn) W.meshes.corn.count = Math.round(W.meshes.corn.userData.full * (q === 'low' ? 0.55 : 1));
+
   if ((q === 'low') !== lambertOn) { lambertOn = q === 'low'; toLambert(lambertOn); }
   const sm = q === 'high' ? 2048 : 1024;
   if (moon.shadow.mapSize.x !== sm) { moon.shadow.mapSize.set(sm, sm); moon.shadow.map?.dispose(); moon.shadow.map = null; }
@@ -515,6 +515,9 @@ function frame(now) {
   menuPad();
   updateWorld(dt, T);
   updateLights(dt, T);
+  W.meshes.sky.position.copy(camera.position); W.meshes.moon.position.copy(camera.position).add(W.meshes.moon.userData.off); // the sky goes where you go
+  if (frameN % 10 === 0) cullRigs(camera.position);
+  updateChunks(camera.position, settings.quality === 'low' ? 0.6 : settings.quality === 'high' ? 1 : 0.85);
   ui.tick(dt);
   U.time.value = T; U.fear.value = mode === 'play' ? fear : 0.05; U.bright.value = settings.bright; U.him.value = mode === 'play' && pm.state === 'chase' ? Math.max(0, fear - 0.5) : 0;
   if (mode !== 'dying' && mode !== 'endcut') { U.red.value = Math.max(0, U.red.value - dt); U.flash.value = Math.max(0, U.flash.value - dt * 2); }
@@ -526,7 +529,7 @@ function frame(now) {
   if (mode === 'paused' || mode === 'read' || mode === 'dead' || mode === 'ending') A.flame(null, 0);
   const _t1 = performance.now();
   renderer.info.reset();
-  composer.render();
+  if (TEST && window.__s?.noPost) renderer.render(scene, camera); else composer.render();
   prof.upd += _t1 - _t0; prof.ren += performance.now() - _t1; prof.n++; prof.calls += renderer.info.render.calls;
   input.endFrame();
 }

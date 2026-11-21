@@ -472,15 +472,15 @@ function field(scene) {
   const p1 = new THREE.PlaneGeometry(1.0, 2.5); p1.translate(0, 1.25, 0); const p2 = p1.clone(); p2.rotateY(Math.PI / 2);
   const cg = mergeGeometries([p1, p2]);
   const R = TX.rng(808), list = [];
-  for (let z = 157; z < 205; z += 0.75) for (let x = -29.5; x < 29.5; x += 0.85) {
+  for (let z = 157; z < 205; z += 0.95) for (let x = -29.5; x < 29.5; x += 1.1) {
     const px = x + (R() - 0.5) * 0.5, pz = z + (R() - 0.5) * 0.4;
     if (!inCorn(px, pz)) continue;
     list.push([px, pz, R() * 6.3, 0.8 + R() * 0.45]);
   }
   for (let i = list.length - 1; i > 0; i--) { const j = (R() * (i + 1)) | 0; [list[i], list[j]] = [list[j], list[i]]; } // shuffled, so Low can draw just the first part
-  const im = new THREE.InstancedMesh(cg, cm, list.length); const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
-  list.forEach(([x, z, r, sc], i) => { q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), r); s.set(sc, sc * (0.85 + R() * 0.3), sc); p.set(x, 0, z); m4.compose(p, q, s); im.setMatrixAt(i, m4); });
-  im.castShadow = false; im.receiveShadow = true; scene.add(im); W.meshes.corn = im; im.userData.full = list.length;
+  const q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
+  const items = list.map(([x, z, r, sc]) => { q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), r); s.set(sc * 1.15, sc * (0.85 + R() * 0.3), sc * 1.15); p.set(x, 0, z); return { x, z, m: new THREE.Matrix4().compose(p, q, s) }; });
+  W.meshes.corn = chunked(scene, cg, cm, items, 10, 'corn', 30);
   // the edge: a fence of old boards round the field, and a wall you can't see past
   for (const [x0, z0, x1, z1] of [[-31, 155, -30.8, 206], [30.8, 155, 31, 206], [-31, 205.8, 31, 206]]) B(x0, 0, z0, x1, 1.2, z1, M.oldWood);
   B(-31, 0, 154.6, -9.3, 1.2, 154.8, M.oldWood); B(9.3, 0, 154.6, 31, 1.2, 154.8, M.oldWood);
@@ -588,14 +588,14 @@ function yards(scene) {
   // leaves: one instanced mesh, thousands of them
   const lt = T2.leaf(), lm = new THREE.MeshStandardMaterial({ map: lt, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.9 });
   const lg = new THREE.PlaneGeometry(0.16, 0.16); lg.rotateX(-Math.PI / 2);
-  const N = 2600, im = new THREE.InstancedMesh(lg, lm, N), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), p = new THREE.Vector3(), c = new THREE.Color();
+  const N = 2600, items = [], q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), p = new THREE.Vector3();
   const cols = [0x8a3a10, 0x9a5a14, 0x5a2a10, 0x8a6a20, 0x6a2010, 0xa04010];
   for (let i = 0; i < N; i++) {
     const x = (R() - 0.5) * 66, z = -12 + R() * 150;
     e.set((R() - 0.5) * 0.4, R() * 6.3, (R() - 0.5) * 0.4); q.setFromEuler(e); const s = 0.7 + R() * 0.9; sc.set(s, s, s);
-    p.set(x, 0.12 + R() * 0.02, z); m4.compose(p, q, sc); im.setMatrixAt(i, m4); im.setColorAt(i, c.set(cols[(R() * cols.length) | 0]).multiplyScalar(0.6 + R() * 0.5));
+    p.set(x, 0.12 + R() * 0.02, z); items.push({ x, z, m: new THREE.Matrix4().compose(p, q, sc), c: new THREE.Color(cols[(R() * cols.length) | 0]).multiplyScalar(0.6 + R() * 0.5) });
   }
-  im.receiveShadow = true; im.castShadow = false; scene.add(im);
+  chunked(scene, lg, lm, items, 12, 'leaves', 28);
 }
 function bareTree(x, z, h, R) {
   cyl(x, 0, z, 0.22, 0.12, h, M.bark, 7, { collide: true });
@@ -639,11 +639,36 @@ function lanterns(scene) {
   scene.add(pts); W.glows = pts;
 }
 
+// ---------- things there are thousands of (corn, leaves): instanced, in small square chunks, and only the chunks
+// near you are drawn (the fog hides the rest anyway). 'density' (0..1) thins them out on Low.
+W.chunks = [];
+function chunked(scene, geo, mat, items, cell, kind, range) {
+  const cells = new Map();
+  for (const it of items) { const k = Math.floor(it.x / cell) + ',' + Math.floor(it.z / cell); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(it); }
+  const group = new THREE.Group(); group.userData.kind = kind; scene.add(group);
+  for (const list of cells.values()) {
+    const im = new THREE.InstancedMesh(geo, mat, list.length);
+    list.forEach((it, i) => { im.setMatrixAt(i, it.m); if (it.c) im.setColorAt(i, it.c); });
+    im.computeBoundingSphere(); im.castShadow = false; im.receiveShadow = true; im.visible = false;
+    const cx = list.reduce((a, b) => a + b.x, 0) / list.length, cz = list.reduce((a, b) => a + b.z, 0) / list.length;
+    im.userData.full = list.length; group.add(im);
+    W.chunks.push({ mesh: im, x: cx, z: cz, range: range + cell * 0.7 });
+  }
+  return group;
+}
+export function updateChunks(cam, density = 1) {
+  for (const c of W.chunks) {
+    const on = Math.hypot(c.x - cam.x, c.z - cam.z) < c.range;
+    c.mesh.visible = on;
+    if (on) c.mesh.count = Math.max(1, Math.round(c.mesh.userData.full * density));
+  }
+}
+
 // ---------- the build ----------
 export function buildWorld(scene) {
   W.scene = scene; makeMaterials();
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 24, 16), M.sky); sky.renderOrder = -1; scene.add(sky); W.meshes.sky = sky;
-  const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: T2.moon(), fog: false, depthWrite: false, color: 0xffd8b0 })); moon.scale.set(60, 60, 1); moon.position.set(-90, 70, 220); scene.add(moon); W.meshes.moon = moon;
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(70, 24, 16), M.sky); sky.renderOrder = -1; sky.frustumCulled = false; scene.add(sky); W.meshes.sky = sky;
+  const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: T2.moon(), fog: false, depthWrite: false, color: 0xffd8b0 })); moon.scale.set(15, 15, 1); moon.position.set(-22, 17, 54); moon.renderOrder = -1; moon.userData.off = new THREE.Vector3(-22, 17, 54); scene.add(moon); W.meshes.moon = moon;
   street(scene);
   // Sam's house (#1): you can't go in until the end
   const home = lot(1, 0);

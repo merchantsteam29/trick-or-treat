@@ -37,6 +37,8 @@ const bodyMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 
 export const ghostMat = new THREE.MeshBasicMaterial({ color: 0xbfd8ff, transparent: true, opacity: 0.32, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
 const ghostHead = new THREE.MeshBasicMaterial({ color: 0xd8e8ff, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
 const _c = new THREE.Color();
+export const RIGS = []; // every body, so the far ones can be skipped
+export function cullRigs(cam, far = 50) { for (const r of RIGS) { const p = r.root.position; const on = Math.hypot(p.x - cam.x, p.z - cam.z) < far || !!r.root.parent?.isBone || r.root.parent !== r.root.parent; r.body.visible = r.headMesh.visible = on; } }
 
 // o: { head, skin, shirt, pants, shoes, coat, dress, hat ('witch'), skeleton, kid, ears ('cat') }
 export function makePerson(o = {}) {
@@ -89,7 +91,8 @@ export function makePerson(o = {}) {
   root.add(body); body.bind(new THREE.Skeleton(bones));
   const headMesh = new THREE.Mesh(G.head, headMaterial(o.head || 'sam')); headMesh.scale.set(1, 1.12, 1.02); headMesh.castShadow = true; head.add(headMesh);
   if (o.kid) root.scale.setScalar(o.kid);
-  return { root, body, hips, spine, neck, head, headMesh, limbs, phase: Math.random() * 6, opts: o };
+  const rig = { root, body, hips, spine, neck, head, headMesh, limbs, phase: Math.random() * 6, opts: o };
+  RIGS.push(rig); return rig;
 }
 export function makeGhost(o = {}) {
   const r = makePerson({ ...o, kid: o.kid ?? 0.66 });

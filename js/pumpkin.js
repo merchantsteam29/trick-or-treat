@@ -170,7 +170,7 @@ export function createPumpkinMan(c) {
     } else if ((pm.state === 'patrol' || pm.state === 'search') && pm.aware > 0.4 && (vis > 0 || lit)) {
       // something moved over there: he stops, turns his head
       pm.lookAt = [p.x, p.z]; pm.path = []; pm.wait = 0.6;
-      if (pm.aware > 0.7 && pm.state !== 'investigate') { pm.state = 'investigate'; pm.goTo(p.x, p.z, 1.9, () => { pm.state = 'search'; pm.searchT = 6; }); }
+      if (pm.aware > 0.7 && pm.state !== 'investigate') { pm.state = 'investigate'; pm.last = { x: p.x, z: p.z }; pm.goTo(p.x, p.z, 1.9, () => { pm.state = 'search'; pm.searchT = 6; }); }
     }
 
     let result = null;
@@ -185,7 +185,7 @@ export function createPumpkinMan(c) {
       case 'investigate': case 'search': {
         if (pm.wait > 0) { pm.wait -= dt; break; }
         if (pm.state === 'search') {
-          pm.searchT -= dt;
+          pm.searchT -= dt; if (!pm.last) pm.last = { x: pm.x, z: pm.z };
           if (pm.searchT <= 0) { pm.state = 'patrol'; pm.path = []; break; }
           if (!pm.path.length || pm.pi >= pm.path.length) {
             const n = randomNode((n) => Math.hypot(n.x - pm.last.x, n.z - pm.last.z) < 9 && regionOk(n));
