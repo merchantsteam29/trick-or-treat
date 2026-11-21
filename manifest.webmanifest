@@ -1,0 +1,19 @@
+{
+  "name": "TRICK OR TREAT",
+  "short_name": "Trick or Treat",
+  "description": "Halloween, 1990. Your little brother was taken on Hollow Lane. Follow his candy from house to house, and don't let the Tall Pumpkin Man see you.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#050303",
+  "theme_color": "#0a0605",
+  "categories": ["games"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

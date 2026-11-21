@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TRICK OR TREAT</title>
+<meta name="description" content="Halloween, 1990. You let go of your little brother's hand for one second on Hollow Lane, and he was gone. Follow his candy from house to house. Something tall with a candle in its head is following you. A first-person horror game.">
+<link rel="icon" href="icons/icon.svg">
+<meta name="theme-color" content="#0a0605">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta property="og:title" content="TRICK OR TREAT">
+<meta property="og:description" content="Every year, the porch lights on Hollow Lane go out. Every year, the Lane gives him one child. This year it's your brother.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Creepster&family=Special+Elite&family=Libre+Franklin:ital,wght@0,300;0,500;0,800;1,300&display=swap">
+<style>
+:root { --ink: #e8ddcc; --dim: #8a7e70; --orange: #ff7a1a; --ember: #ff4a10; --line: rgba(232, 221, 204, .16);
+  --f-head: "Libre Franklin", Arial, sans-serif; --f-scary: "Creepster", Impact, sans-serif; --f-type: "Special Elite", "Courier New", monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: var(--ink); font-family: var(--f-head); font-weight: 300; user-select: none; -webkit-user-select: none; }
+canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+button { font: 500 17px var(--f-head); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); background: transparent; border: 0; padding: 9px 16px; cursor: pointer; transition: .15s; }
+button:hover:not(:disabled), button:focus-visible { color: #fff; outline: none; text-shadow: 0 0 14px rgba(255, 110, 20, .9); }
+button:hover::before, button:focus-visible::before { content: '› '; color: var(--orange); }
+button.link { text-transform: none; letter-spacing: 0; padding: 0; font: 16px var(--f-head); color: var(--orange); text-decoration: underline; }
+button.link::before { content: none !important; }
+.screen { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px 16px; overflow-y: auto; z-index: 20; background: radial-gradient(ellipse at 50% 60%, rgba(0, 0, 0, .15), rgba(0, 0, 0, .88) 72%); }
+.screen.solid { background: #000; }
+.card { width: min(580px, 100%); display: grid; gap: 10px; text-align: center; }
+h1 { font: 400 clamp(54px, 12vw, 132px)/0.9 var(--f-scary); margin: 0; color: var(--orange); text-shadow: 0 0 30px rgba(255, 90, 10, .65), 0 0 2px #fff4; letter-spacing: .03em; animation: flick 4s steps(1) infinite; }
+h1 small { display: block; font-size: .36em; letter-spacing: .5em; color: #c8a080; text-shadow: none; margin: 6px 0 4px; }
+@keyframes flick { 0%, 91%, 94%, 100% { opacity: 1 } 92% { opacity: .55 } 93% { opacity: .9 } }
+.tag { font: italic 300 18px/1.5 var(--f-head); color: var(--dim); margin: 8px auto 16px; max-width: 32em; }
+.menu { display: grid; gap: 0; width: min(330px, 100%); margin: 0 auto; }
+.small { font: 14px/1.5 var(--f-head); color: var(--dim); }
+h2 { font: 400 40px var(--f-scary); letter-spacing: .1em; margin: 0 0 6px; color: var(--orange); }
+.row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.warn p { font: 18px/1.6 var(--f-head); margin: 0 0 10px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; text-align: left; font-size: 17px; margin: 4px 0 10px; }
+.keys dt { font-family: var(--f-type); color: #fff; font-size: 15px; }
+.keys dd { margin: 0; }
+.settings { display: grid; gap: 12px; text-align: left; }
+.settings label { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; font-size: 17px; }
+.settings label output { font-family: var(--f-type); font-size: 14px; color: var(--dim); }
+.settings input[type=range] { grid-column: 1 / -1; accent-color: var(--orange); width: 100%; }
+.settings select { font: 15px var(--f-type); background: #111; color: var(--ink); border: 1px solid var(--line); padding: 4px 8px; }
+.settings .chk { grid-template-columns: auto 1fr; cursor: pointer; }
+.settings input[type=checkbox] { accent-color: var(--orange); width: 18px; height: 18px; }
+/* the time card */
+#card { background: #000; }
+#cardTime { font: 400 clamp(40px, 9vw, 90px)/1 var(--f-type); color: var(--orange); text-shadow: 0 0 24px rgba(255, 90, 10, .7); animation: fadeup 1.2s; }
+#cardSub { font: italic 300 22px var(--f-head); color: var(--dim); letter-spacing: .12em; opacity: 0; animation: fadeup 1.2s .7s forwards; }
+/* death */
+#dead { background: radial-gradient(ellipse, #1a0300, #000 70%); }
+#deadTitle { font: 400 clamp(54px, 12vw, 120px)/1 var(--f-scary); letter-spacing: .08em; color: #c81a0a; text-shadow: 0 0 24px rgba(200, 20, 0, .6); margin: 4px 0; animation: shake .25s 2; }
+@keyframes shake { 0%, 100% { transform: none } 25% { transform: translate(-4px, 2px) } 75% { transform: translate(4px, -2px) } }
+#deadLine { font: italic 300 20px var(--f-head); color: var(--dim); }
+#deadLearn { font: 17px/1.5 var(--f-head); color: var(--ink); border-left: 2px solid var(--orange); text-align: left; padding: 6px 12px; margin: 10px auto; max-width: 30em; }
+#deadLearn:empty { display: none; }
+/* endings */
+#ending .card { width: min(660px, 100%); }
+#endTitle { font: 400 64px var(--f-scary); color: var(--orange); letter-spacing: .12em; }
+#endLines p { font: 300 21px/1.55 var(--f-head); margin: 0 0 14px; opacity: 0; animation: fadeup 2.2s forwards; }
+#endFoot { opacity: 0; animation: fadeup 2s forwards; }
+@keyframes fadeup { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+/* notes */
+#note .card { width: min(620px, 100%); }
+.paper { background: #e6dcc4; color: #2a2018; text-align: left; padding: 26px 30px; box-shadow: 0 10px 50px #000; transform: rotate(-0.6deg); font: 18px/1.55 var(--f-type); max-height: 70vh; overflow-y: auto; background-image: repeating-linear-gradient(transparent 0 27px, rgba(80, 110, 160, .22) 27px 28px); }
+.paper p { margin: 0 0 12px; }
+.paper .hand { font-weight: bold; letter-spacing: .04em; }
+.paper .list { list-style: none; padding: 0; margin: 0 0 12px; }
+.paper .list li { padding: 2px 0; text-decoration: line-through; text-decoration-color: rgba(40, 20, 10, .6); }
+.paper .list li.fresh { color: #a0100a; text-decoration: none; font-weight: bold; }
+.paper .small { color: #5a4a3a; font: italic 15px var(--f-head); }
+#noteTitle { font: italic 15px var(--f-head); color: var(--dim); letter-spacing: .12em; text-transform: uppercase; }
+/* what you found */
+#knowList { text-align: left; max-height: 60vh; overflow-y: auto; }
+.kgroup h3 { font: 800 13px var(--f-head); letter-spacing: .2em; text-transform: uppercase; color: var(--orange); margin: 14px 0 6px; }
+.kgroup p { margin: 0 0 8px; font-size: 16px; line-height: 1.45; }
+.kgroup .dim { color: var(--dim); }
+/* HUD */
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+#xhair { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(240, 225, 200, .4); transition: .15s; }
+#xhair.on { width: 8px; height: 8px; margin: -4px 0 0 -4px; background: rgba(255, 200, 140, .9); }
+#prompt { position: absolute; left: 0; right: 0; top: calc(50% + 26px); text-align: center; font: 500 17px var(--f-head); text-shadow: 0 1px 4px #000, 0 0 10px #000; }
+#prompt b { font: 13px var(--f-type); border: 1px solid rgba(232, 221, 204, .55); padding: 1px 6px; margin-right: 6px; }
+#prompt i { display: block; width: 140px; height: 3px; margin: 6px auto 0; background: linear-gradient(90deg, var(--orange) calc(var(--p) * 100%), rgba(255, 255, 255, .15) 0); }
+#sub { position: absolute; left: 50%; bottom: 12%; transform: translateX(-50%); max-width: min(780px, 90vw); text-align: center; font: 400 21px/1.45 var(--f-head); color: #f4eee4; text-shadow: 0 1px 3px #000, 0 0 14px #000; opacity: 0; transition: opacity .4s; }
+#sub.on { opacity: 1; }
+#sub.think { font-style: italic; color: #d8d0c4; }
+#sub b { font-weight: 800; color: #fff; }
+#sub.walkie { font-family: var(--f-type); color: #ffd8a0; }
+#sub.ghost { color: #c8dcff; font-style: italic; }
+#toast { position: absolute; left: 50%; top: 14%; transform: translateX(-50%); font: 500 16px var(--f-head); letter-spacing: .2em; text-transform: uppercase; color: #fff; opacity: 0; transition: opacity .4s; text-shadow: 0 0 10px #000; }
+#toast.on { opacity: .9; }
+#hint { position: absolute; left: 50%; top: 21%; transform: translateX(-50%); font: 15px var(--f-type); color: #c8b8a0; opacity: 0; transition: opacity .6s; text-align: center; max-width: 90vw; text-shadow: 0 0 6px #000; }
+#hint.on { opacity: .95; }
+#obj { position: absolute; left: 26px; top: 22px; max-width: 380px; opacity: 0; transition: opacity .8s; text-shadow: 0 1px 4px #000, 0 0 8px #000; }
+#obj.on { opacity: 1; }
+#objMain { font: 400 26px var(--f-scary); color: var(--orange); letter-spacing: .06em; margin: 4px 0; }
+#objSub { font: 15px/1.45 var(--f-head); color: #cfc7bb; }
+#objSub div::before { content: '— '; color: var(--dim); }
+#breath { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%); width: 200px; opacity: 0; transition: opacity .3s; text-align: center; font: 12px var(--f-type); color: var(--dim); letter-spacing: .2em; }
+#breath.on { opacity: 1; }
+#breath.hold { color: #fff; }
+#breathBar, #stamBar { height: 3px; background: rgba(255, 255, 255, .12); margin-top: 4px; }
+#breathFill { height: 100%; background: #9ab8e0; width: 100%; }
+#stam { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); width: 120px; opacity: 0; transition: opacity .5s; }
+#stamFill { height: 100%; background: rgba(255, 200, 150, .6); width: 100%; }
+#skip { position: fixed; right: 26px; bottom: 24px; z-index: 12; font: 13px var(--f-type); color: var(--dim); opacity: 0; transition: .4s; width: 140px; text-align: right; }
+#skip.on { opacity: .8; }
+#skipBar { height: 2px; background: rgba(255, 255, 255, .12); margin-top: 5px; }
+#skipFill { height: 100%; width: 0; background: var(--orange); }
+/* blood on the lens, and the slats you hide behind */
+#bloodFX { position: fixed; inset: 0; pointer-events: none; z-index: 8; opacity: 0; transition: opacity .1s; }
+#bloodFX.on { opacity: 1; }
+#bloodFX.heavy { background: radial-gradient(circle at 30% 40%, rgba(110, 0, 0, .9) 0 8%, transparent 9%), radial-gradient(circle at 62% 30%, rgba(90, 0, 0, .85) 0 12%, transparent 13%), radial-gradient(circle at 70% 70%, rgba(120, 4, 0, .9) 0 6%, transparent 7%), radial-gradient(circle at 20% 80%, rgba(80, 0, 0, .9) 0 14%, transparent 15%), radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(70, 0, 0, .95) 80%); }
+#hideFX { position: fixed; inset: 0; pointer-events: none; z-index: 7; opacity: 0; transition: opacity .3s; }
+#hideFX.on { opacity: 1; }
+#hideFX.closet { background: repeating-linear-gradient(180deg, rgba(0, 0, 0, .96) 0 16px, transparent 16px 24px), radial-gradient(ellipse at 50% 50%, transparent 25%, #000 75%); }
+#hideFX.bed { background: linear-gradient(180deg, #000 0 34%, rgba(0, 0, 0, .7) 38%, transparent 44%), radial-gradient(ellipse at 50% 70%, transparent 30%, #000 80%); }
+#hideFX.hedge { background: radial-gradient(circle at 20% 30%, #050a03 0 9%, transparent 10%), radial-gradient(circle at 80% 25%, #060c04 0 12%, transparent 13%), radial-gradient(circle at 30% 85%, #040803 0 14%, transparent 15%), radial-gradient(circle at 75% 80%, #050a03 0 11%, transparent 12%), radial-gradient(ellipse at 50% 50%, transparent 25%, rgba(2, 6, 2, .97) 70%); }
+/* touch */
+#touch { position: fixed; inset: 0; z-index: 9; display: none; }
+#touch.on { display: block; }
+#tZone { position: absolute; inset: 0; }
+#tStick { position: absolute; width: 110px; height: 110px; margin: -55px 0 0 -55px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .15); display: none; }
+#tStick.on { display: block; }
+#tKnob { position: absolute; left: 35px; top: 35px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, .15); }
+.tb { position: absolute; width: 64px; height: 64px; border-radius: 50%; border: 1px solid rgba(232, 221, 204, .3); background: rgba(0, 0, 0, .3); color: var(--ink); font: 11px var(--f-type); display: grid; place-items: center; }
+.tb.on { background: rgba(255, 122, 26, .35); }
+body:not([data-input="touch"]) .only-touch, body:not([data-input="pad"]) .only-pad, body:not([data-input="keys"]) .only-keys { display: none; }
+@media (max-width: 600px) { #obj { left: 14px; top: 12px; max-width: 70vw } #objMain { font-size: 20px } #sub { font-size: 17px; bottom: 24% } }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hideFX"></div>
+<div id="bloodFX"></div>
+<div id="skip">Hold E to skip<div id="skipBar"><div id="skipFill"></div></div></div>
+
+<div id="hud" hidden>
+  <div id="xhair"></div>
+  <div id="prompt"></div>
+  <div id="sub"></div>
+  <div id="toast"></div>
+  <div id="hint"></div>
+  <div id="obj"><div id="objMain"></div><div id="objSub"></div></div>
+  <div id="breath">BREATH<div id="breathBar"><div id="breathFill"></div></div></div>
+  <div id="stam"><div id="stamBar"><div id="stamFill"></div></div></div>
+</div>
+
+<div id="touch">
+  <div id="tZone"></div>
+  <div id="tStick"><div id="tKnob"></div></div>
+  <div class="tb" data-t="use" style="right:24px;bottom:110px">USE</div>
+  <div class="tb" data-t="crouch" style="right:24px;bottom:30px">CROUCH</div>
+  <div class="tb" data-t="run" style="right:100px;bottom:70px">RUN</div>
+  <div class="tb" data-t="light" style="right:100px;bottom:150px">LIGHT</div>
+  <div class="tb" data-t="breath" style="right:176px;bottom:30px">BREATH</div>
+  <div class="tb" data-t="notes" style="right:84px;top:20px;width:52px;height:52px">GOAL</div>
+  <div class="tb" data-t="pause" style="right:20px;top:20px;width:52px;height:52px">II</div>
+</div>
+
+<div id="warn" class="screen solid" hidden>
+  <div class="card warn">
+    <h2>Before you go out</h2>
+    <p>This is a horror game. It has a monster that hunts you, jump scares, children in danger, and graphic, bloody deaths.</p>
+    <p class="small">Gore is set to <b>Full</b>: you'll see what he leaves behind. If you'd rather not, Settings → Gore → "Quick cut" cuts to black at the moment it happens.</p>
+    <p class="small">Play it in the dark, with headphones. The walkie-talkie hisses when he is close.</p>
+    <div class="row"><button id="warnOk">I understand</button></div>
+  </div>
+</div>
+
+<div id="title" class="screen" hidden>
+  <div class="card">
+    <h1>TRICK<small>OR</small>TREAT</h1>
+    <p class="tag">Halloween, 1990. You let go of your little brother's hand for one second on Hollow Lane.<br>One by one, the porch lights go out.</p>
+    <div class="menu">
+      <button id="btnContinue" hidden>Continue</button>
+      <button id="btnNew">New night</button>
+      <button id="btnReplayIntro" hidden>The opening</button>
+      <button id="btnHow">How to play</button>
+      <button id="btnSettings">Settings</button>
+      <button id="syncBtn" title="Keep your progress on all your devices">Sync</button>
+      <button id="installApp" style="display:none">Install as an app</button>
+      <button id="pcDownload" title="The Game Library app for Windows: every game in one place">Download for PC</button>
+    </div>
+    <p class="small" id="titleProg"></p>
+    <p class="small only-keys">Mouse and keyboard · controllers work too · headphones</p>
+    <p class="small only-pad">Controller connected</p>
+    <p class="small only-touch">Touch controls · play it sideways · headphones</p>
+  </div>
+</div>
+
+<div id="how" class="screen" hidden>
+  <div class="card">
+    <h2>Hollow Lane</h2>
+    <dl class="keys only-keys">
+      <dt>WASD · Mouse</dt><dd>Move, look</dd>
+      <dt>Shift</dt><dd>Run (he hears it)</dd>
+      <dt>C · Ctrl</dt><dd>Crouch: quiet, and harder to see</dd>
+      <dt>F · Right click</dt><dd>Flashlight (he sees it)</dd>
+      <dt>E · Click</dt><dd>Use, open, read, hide</dd>
+      <dt>Space</dt><dd>Hold your breath, while hiding</dd>
+      <dt>Tab</dt><dd>What you're doing</dd>
+      <dt>Esc</dt><dd>Pause · what you've found</dd>
+    </dl>
+    <dl class="keys only-pad">
+      <dt>Sticks</dt><dd>Move, look</dd>
+      <dt>LB / L3</dt><dd>Run</dd>
+      <dt>B / R3</dt><dd>Crouch</dd>
+      <dt>X / RB</dt><dd>Flashlight</dd>
+      <dt>A</dt><dd>Use, hide</dd>
+      <dt>RT / LT</dt><dd>Hold your breath</dd>
+      <dt>Y</dt><dd>Objective</dd>
+      <dt>Menu</dt><dd>Pause</dd>
+    </dl>
+    <p class="small" style="text-align:left">Toby dropped his candy as he was taken. Follow it. You can't fight what took him: stay low, stay out of the light, and listen. Your walkie-talkie picks him up when he's near.</p>
+    <p class="small" style="text-align:left">If he sees you, run, break his line of sight, then hide. If he watches you hide, he knows where you are. The neighbours on their porches will scream for him if they see you.</p>
+    <p class="small" style="text-align:left">Some of the Lane's old jack-o'-lanterns have names carved in them. Blow them out.</p>
+    <div class="row"><button data-back>Back</button></div>
+  </div>
+</div>
+
+<div id="settings" class="screen" hidden>
+  <div class="card">
+    <h2>Settings</h2>
+    <div class="settings">
+      <label>Gore <select id="sGore"><option value="full">Full</option><option value="quick">Quick cut</option></select></label>
+      <label>Volume <output></output><input type="range" id="sVol" min="0" max="1" step="0.05"></label>
+      <label>Brightness <output></output><input type="range" id="sBright" min="0.7" max="1.8" step="0.05"></label>
+      <label>Look sensitivity <output></output><input type="range" id="sSens" min="0.3" max="2.5" step="0.05"></label>
+      <label>Field of view <output></output><input type="range" id="sFov" min="60" max="100" step="1"></label>
+      <label>Graphics <select id="sQuality"><option value="low">Low (fastest)</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+      <label class="chk"><input type="checkbox" id="sVoices"> Spoken voices (text to speech)</label>
+      <label class="chk"><input type="checkbox" id="sSubs"> Subtitles</label>
+      <label class="chk"><input type="checkbox" id="sInvert"> Invert look up / down</label>
+      <label class="chk"><input type="checkbox" id="sPads"> Controllers ON</label>
+      <label class="chk"><input type="checkbox" id="sRumble"> Controller rumble</label>
+    </div>
+    <div class="row"><button data-back>Back</button></div>
+  </div>
+</div>
+
+<div id="pause" class="screen" hidden>
+  <div class="card">
+    <h2>Paused</h2>
+    <div class="menu">
+      <button id="btnResume">Resume</button>
+      <button id="btnKnow">What you've found</button>
+      <button id="btnPauseSettings">Settings</button>
+      <button id="btnQuit">Quit to title</button>
+    </div>
+    <p class="small">The night is saved at every checkpoint.</p>
+  </div>
+</div>
+
+<div id="know" class="screen" hidden>
+  <div class="card">
+    <h2>What you've found</h2>
+    <div id="knowList"></div>
+    <p class="small" id="knowCount"></p>
+    <div class="row"><button data-back>Back</button></div>
+  </div>
+</div>
+
+<div id="note" class="screen" hidden>
+  <div class="card">
+    <div id="noteTitle"></div>
+    <div class="paper" id="noteBody"></div>
+    <div class="row"><button id="noteClose">Put it down</button></div>
+  </div>
+</div>
+
+<div id="card" class="screen" hidden>
+  <div class="card"><div id="cardTime"></div><div id="cardSub"></div></div>
+</div>
+
+<div id="dead" class="screen" hidden>
+  <div class="card">
+    <div id="deadTitle"></div>
+    <p id="deadLine"></p>
+    <p id="deadLearn"></p>
+    <div class="menu"><button id="btnRetry">Try again</button><button id="btnDeadTitle">Title</button></div>
+    <p class="small" id="deadCount"></p>
+  </div>
+</div>
+
+<div id="ending" class="screen solid" hidden>
+  <div class="card">
+    <div id="endTitle"></div>
+    <div id="endLines"></div>
+    <div id="endFoot"><p class="small" id="endWhich"></p><div class="row"><button id="btnEndTitle">Title</button></div></div>
+  </div>
+</div>
+
+<script src="sync.js"></script>
+<script type="module" src="js/main.js"></script>
+<script src="install.js"></script>
+</body>
+</html>
